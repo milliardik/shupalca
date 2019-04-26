@@ -1,0 +1,102 @@
+import datetime
+from peewee import DoesNotExist
+from db_modules.db_models.base import db
+from db_modules.db_models.asset_inventory_models import AssetModel, AssetFirmware, AssetManufacturer, AssetType, AssetInventory
+from db_modules.db_models.asset_models import Asset, AssetMgmt
+
+
+class DbAssetObj():
+	
+	def __init__(self, host_name, ip_address):
+		
+		#self.mgmt_data = {'host_name':host_name,
+		#				  'ip_address':ip_address}
+		try:
+			asset_mgmt = AssetMgmt.get(AssetMgmt.host_name == host_name)
+		except DoesNotExist:
+			asset_mgmt = AssetMgmt.create(host_name = host_name, ip_address = ip_address)
+			
+		self.asset_mgmt = asset_mgmt
+			
+		query = (AssetInventory.select(AssetInventory)
+				 .join(Asset, on=(AssetInventory.asset_id == Asset.id))
+				 .join(AssetMgmt, on=(Asset.mgmt_id == AssetMgmt.id))
+				 .where(AssetMgmt.host_name == host_name))
+		 
+		
+		self.assets_list = [asset for asset in query]
+		self.in_db = True if len(self.assets_list) > 0 else False
+		
+		
+	def update(self, **kwargs):
+		for asset in self.assets_list:
+			query = Asset.update(**kwargs).where(Asset.asset_inventory_id == asset)
+			query.execute()
+			
+	def delete(self):
+		for asset in self.assets_list:
+			asset.delete_instance()
+			
+	def create(self, inventory_datas):
+		for inventory_data in inventory_datas:
+			asset_inventory_obj = DbAssetInventory(inventory_data.get('serial_num'))
+			if not asset_inventory_obj.in_db:
+				asset_inventory_obj.create(inventory_data)
+			
+			asset_obj = Asset.create(mgmt_id = self.asset_mgmt,
+									 asset_inventory_id = asset_inventory_obj.get_id(),
+									 first_seen = datetime.datetime.now(),
+									 last_seen = datetime.datetime.now())
+			
+			self.assets_list.append(asset_inventory_obj)
+		
+		return len(self.assets_list)
+			
+				
+	def get_asset_serial_nums(self):
+		serial_nums = []
+		for asset in self.assets_list:
+			serial_nums.append(asset.asset_inventory_id.serial_num)
+		return serial_nums
+		
+	def __eq__(self, other):
+		serial_nums_set_1 = self.get_asset_serial_nums()
+		serial_nums_set_2 = other.get_asset_serial_nums()
+		bool_list = list(map(lambda x,y : x==y, serial_nums_set_1, serial_nums_set_2))
+		
+		if len(serial_nums_set_1) == len(serial_nums_set_2) and all(bool_list):
+			return True
+		
+		return False
+		
+class DbAssetInventory():
+
+	def __init__(self, serial_num):
+		self.serial_num = serial_num
+		try:
+			self.asset_inventory = AssetInventory.get(AssetInventory.serial_num == serial_num)
+			self.in_db = True
+		except DoesNotExist:
+			self.in_db = False
+			
+			
+	def create(self, inventory_data):		
+		inventory_data['manufacturer_id'], _ = AssetManufacturer.get_or_create(manufacturer_name=inventory_data.pop('manufacturer'))
+		inventory_data['model_id'], _ = AssetModel.get_or_create(model_name=inventory_data.pop('model'))
+		inventory_data['firmware_id'], _ = AssetFirmware.get_or_create(firmware_name=inventory_data.pop('firmware'))
+		inventory_data['type_id'], _ = AssetType.get_or_create(type_name=inventory_data.pop('type'))
+
+		self.asset_inventory = AssetInventory.create(**inventory_data)
+		
+	def get_id(self):
+		return self.asset_inventory.id
+		
+	def delete(self):
+		pass
+		
+	def update(self):
+		pass
+
+class DbAssetInterface():
+	def __init__(self):
+		pass

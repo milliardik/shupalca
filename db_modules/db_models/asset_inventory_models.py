@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+from db_modules.db_models.base import *
+from db_modules.db_models.asset_models import Asset
+
+
+class AssetModel(Model):
+	model_name = CharField(max_length=100, unique=True, null=False)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_model'
+
+class AssetFirmware(Model):
+	firmware_name = CharField(max_length=250, unique=True, null=False)
+
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_firmware'
+
+class AssetManufacturer(Model):
+	manufacturer_name = CharField(max_length=100, unique=True, null=False)
+
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_manufacturer'
+		
+class AssetType(Model):
+	type_name = CharField(max_length=100, unique=True, null=False)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_type'
+		
+class AssetInventory(Model):
+	asset_id = ForeignKeyField(Asset, backref='asset', null=True)
+	manufacturer_id = ForeignKeyField(AssetManufacturer, backref='manufacturer', null=True)
+	model_id = ForeignKeyField(AssetModel, backref='model', null=True)
+	firmware_id = ForeignKeyField(AssetFirmware, backref='firmware', null=True)
+	type_id = ForeignKeyField(AssetType, backref='type', null=True)
+	serial_num = CharField(max_length=100, unique=True, null=True)
+	inventory_num = IntegerField(null=True)
+	is_chassi = BooleanField(null=False, default=0)
+	is_module = BooleanField(null=False, default=0)
+	entry_date = DateField(null=False, default=date.today())
+	write_off_date = DateField(null=True)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_inventory'
+'''
+class AssetMgmt(Model):
+	host_name = CharField(max_length=100, unique=True, null=True)
+	ip_address = CharField(max_length=45, unique=True, null=True)
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_mgmt'
+
+class Asset(Model):
+	mgmt_id = ForeignKeyField(AssetMgmt, backref='mgmt', null=True)
+	asset_inventory_id = ForeignKeyField(AssetInventory, backref='inventory', null=True)
+	first_seen = DateTimeField()
+	last_seen = DateTimeField(null=False, default=datetime.now())
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_asset'
+		
+class IfMode(Model):
+	mode_name = CharField(max_length=45, unique=True, null=False)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_interface_mode'
+	
+class IfVlan(Model):
+	vlan_num = IntegerField(unique=True, null=False)
+	description = CharField(max_length=100, null=True, default=None)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_vlan'
+
+class AssetInterface(Model):
+	if_name = CharField(max_length=60, null=False)
+	description = CharField(max_length=150, null=True)
+	oper_status = BooleanField(null=False, default=0)
+	admin_status = BooleanField(null=False, default=1)
+	mode_id = ForeignKeyField(IfMode, backref='mode', null=True)
+	asset_id = ForeignKeyField(AssetInventory, backref='asset', null=False)
+	is_physical = BooleanField(null=False, default=1)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_asset_interface'
+
+class MapVlan(Model):
+	vlan_id = ForeignKeyField(IfVlan, backref='vlan', null=False)
+	if_id = ForeignKeyField(AssetInterface, backref='if', null=False)
+	
+	class Meta:
+		database = db
+		table_name = 'tbl_map_vlan'
+	
+
+
+'''
+
+
