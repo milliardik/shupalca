@@ -1,7 +1,0 @@
-pysnmp==4.4.8 #(Зависим от 2-5)
-ply==3.11 
-pyasn1==0.4.5
-pycryptodomex==3.7.2
-pysmi==0.3.3
-peewee==3.8.2
-PyMySQL==0.9.3
