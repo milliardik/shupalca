@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import datetime
 from snmp_modules import *
 from db_modules import *
